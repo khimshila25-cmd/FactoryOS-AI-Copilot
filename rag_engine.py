@@ -1,4 +1,4 @@
-from langchain_community.document_loaders import TextLoader
+from langchain_community.document_loaders import PyPDFLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from sentence_transformers import SentenceTransformer
 from groq import Groq
@@ -12,8 +12,17 @@ client = Groq(
     api_key=os.getenv("GROQ_API_KEY")
 )
 
-loader = TextLoader("Documents/factory_sop.txt")
-docs = loader.load()
+import glob
+
+docs = []
+
+pdf_files = glob.glob("Documents/*.pdf")
+
+for pdf in pdf_files:
+    loader = PyPDFLoader(pdf)
+    docs.extend(loader.load())
+
+print(f"Loaded {len(pdf_files)} PDF files")
 
 splitter = RecursiveCharacterTextSplitter(
     chunk_size=200,
@@ -33,7 +42,9 @@ question_embedding = model.encode([question])
 
 scores = np.dot(embeddings, question_embedding.T).flatten()
 
-best_match = texts[np.argmax(scores)]
+top_indices = np.argsort(scores)[-5:]
+
+context = "\n\n".join([texts[i] for i in top_indices])
 
 prompt = f"""
 You are an AI Manufacturing Operations Copilot.
@@ -41,9 +52,11 @@ You are an AI Manufacturing Operations Copilot.
 Use the context below to answer the question.
 
 Context:
-{best_match}
+
+{context}
 
 Question:
+
 {question}
 """
 
