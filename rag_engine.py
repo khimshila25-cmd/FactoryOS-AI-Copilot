@@ -1,39 +1,61 @@
 from langchain_community.document_loaders import TextLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from sentence_transformers import SentenceTransformer
-from sklearn.metrics.pairwise import cosine_similarity
+from groq import Groq
+from dotenv import load_dotenv
+import numpy as np
+import os
 
-# Load document
+load_dotenv()
+
+client = Groq(
+    api_key=os.getenv("GROQ_API_KEY")
+)
+
 loader = TextLoader("Documents/factory_sop.txt")
 docs = loader.load()
 
-# Split document
 splitter = RecursiveCharacterTextSplitter(
-    chunk_size=100,
+    chunk_size=200,
     chunk_overlap=20
 )
 
 chunks = splitter.split_documents(docs)
 
-# Embedding model
 model = SentenceTransformer("all-MiniLM-L6-v2")
 
-chunk_texts = [chunk.page_content for chunk in chunks]
-chunk_embeddings = model.encode(chunk_texts)
+texts = [chunk.page_content for chunk in chunks]
+embeddings = model.encode(texts)
 
-# User query
-query = "What orders should be escalated?"
+question = input("Ask FactoryOS: ")
 
-query_embedding = model.encode([query])
+question_embedding = model.encode([question])
 
-# Similarity search
-scores = cosine_similarity(
-    query_embedding,
-    chunk_embeddings
+scores = np.dot(embeddings, question_embedding.T).flatten()
+
+best_match = texts[np.argmax(scores)]
+
+prompt = f"""
+You are an AI Manufacturing Operations Copilot.
+
+Use the context below to answer the question.
+
+Context:
+{best_match}
+
+Question:
+{question}
+"""
+
+response = client.chat.completions.create(
+    model="openai/gpt-oss-20b",
+    messages=[
+        {
+            "role": "user",
+            "content": prompt
+        }
+    ]
 )
 
-best_match = scores.argmax()
-
-print("Question:", query)
-print("\nBest Match:\n")
-print(chunk_texts[best_match])
+print("\nFactoryOS Answer:\n")
+print(response.choices[0].message.content)
