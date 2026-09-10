@@ -1,11 +1,12 @@
 import streamlit as st
-from langchain_community.document_loaders import TextLoader
+from langchain_community.document_loaders import PyPDFLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from sentence_transformers import SentenceTransformer
 from groq import Groq
 from dotenv import load_dotenv
 import numpy as np
 import os
+import glob
 
 load_dotenv()
 
@@ -23,8 +24,13 @@ question = st.text_input(
 
 if question:
 
-    loader = TextLoader("Documents/factory_sop.txt")
-    docs = loader.load()
+    docs = []
+
+    pdf_files = glob.glob("Documents/*.pdf")
+
+    for pdf in pdf_files:
+        loader = PyPDFLoader(pdf)
+        docs.extend(loader.load())
 
     splitter = RecursiveCharacterTextSplitter(
         chunk_size=200,
@@ -50,13 +56,19 @@ if question:
         question_embedding.T
     ).flatten()
 
-    best_match = texts[np.argmax(scores)]
+    top_indices = np.argsort(scores)[-5:]
+
+    context = "\n\n".join(
+        [texts[i] for i in top_indices]
+    )
 
     prompt = f"""
     You are an AI Manufacturing Operations Copilot.
 
+    Use the context below to answer the question.
+
     Context:
-    {best_match}
+    {context}
 
     Question:
     {question}
