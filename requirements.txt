@@ -1,8 +1,9 @@
 streamlit
 langchain
+langchain-community
 faiss-cpu
 sentence-transformers
-pandas
+pypdf
 groq
 python-dotenv
-pypdf
+pandas
