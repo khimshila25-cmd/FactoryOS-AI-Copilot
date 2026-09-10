@@ -1,0 +1,16 @@
+Factory Production SOP
+
+1. Fabric Inspection
+All incoming fabric must be inspected before production.
+
+2. Cutting Process
+Cutting should begin only after quality approval.
+
+3. Stitching Process
+Each batch must be tracked by production ID.
+
+4. Delay Management
+Orders delayed more than 3 days must be escalated to the production manager.
+
+5. Supplier Risk
+Suppliers with more than 2 late deliveries in a month should be flagged as high risk.
